@@ -1483,11 +1483,176 @@
 
 
 
+# #!/usr/bin/env python3
+
+# import sys
+# import os
+# import time
+# from datetime import datetime
+# from dotenv import load_dotenv
+
+# load_dotenv()
+
+# sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# from src.linkedin_scraper import LinkedInScraper
+
+
+# def main():
+
+#     print("=" * 70)
+#     print("🚀 LINKEDIN SCRAPER - REPO B")
+#     print("=" * 70)
+
+#     keywords = [
+
+#         "GRC Analyst",
+#         "Healthcare Data Analyst",
+#         "Healthcare data analyst, Health care business analyst,HeHalthcare data engineer",
+#         "HR Recruiter",
+#         "ITSM/ITIL",
+#         "Java Developer",
+#         "Java Full Stack",
+#         "Manufacturing engineer (Mechanical)",
+#         "Manufacturing engineer (Mechanical) for Canada",
+#         "Marketing Automation Specialist",
+#         "Mechanical Engineer",
+#         "Medical Affairs",
+#         "Medical Coding",
+#         "MLOps Engineer",
+#         ".Net",
+#         ".Net for Ireland",
+#         "Netsuite",
+#         "Network Engineer",
+#         "Network Security Engineer",
+#         "Payroll Analyst",
+#         "Pharmacovigilance",
+#         "Photography",
+#         "Product Manager",
+#         "Project Coordinator for Canada",
+#         "Project Management for Ireland",
+#         "Project Management Internship",
+#         "Project Manager",
+#         "python developer",
+#         "QA Automation Engineer",
+#         "Quality Analyst",
+#         "Quality Analyst for UK",
+#         "Quality Assurance Engineer",
+#         "Quality Engineer",
+#         "Regulatory Affairs",
+#         "RTL Design Engineer",
+#         "Safety Analyst",
+#         "Sailpoint",
+#         "Sales executive for UK",
+#         "Salesforce Developer",
+#         "Salesforce Developer for UK",
+#         "SAP",
+#         "Sap basis and security",
+#         "SAP FICO",
+#         "SAP MM",
+#         "Scrum Master",
+#         "Security Engineer",
+#         "ServiceNow Developer",
+#         "Software Developer",
+#         "Software Engineer",
+#         "Software Engineer for Ireland",
+#         "Software/Hardware Asset Management Analyst",
+#         "Structural Engineer for Canada",
+#         "Supply Chain",
+#         "Supply Chain (citizen/h4ead)",
+#         "Supply Chain for Ireland",
+#         "Sustainability analyst for Ireland",
+#         "System Infrastructure Engineer",
+#         "Tax analyst",
+#         "Technical program Management (citizen/h4ead)",
+#         "Tosca Test Automation Engineer",
+#         "UX Designer",
+#         "Workday Analyst"
+#     ]
+
+#     location = os.getenv("LOCATION", "United States")
+#     max_workers = 6
+
+#     scraper = LinkedInScraper(use_database=True)
+
+#     start_time = time.time()
+
+#     jobs = scraper.scrape_all_jobs_batch(
+#         keywords=keywords,
+#         location=location,
+#         max_workers=max_workers,
+#         save_to_db=True
+#     )
+
+#     if jobs:
+#         scraper.save_to_csv(jobs)
+
+#     elapsed = time.time() - start_time
+
+#     print("\n" + "=" * 70)
+#     print("✅ REPO B SCRAPE COMPLETE")
+#     print("=" * 70)
+#     print(f"Jobs scraped: {len(jobs)}")
+#     print(f"Runtime: {elapsed/60:.1f} minutes")
+
+
+# if __name__ == "__main__":
+#     main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #!/usr/bin/env python3
+"""LinkedIn scraper with resume support - Repository 2"""
 
 import sys
 import os
 import time
+import requests
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -1498,14 +1663,101 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from src.linkedin_scraper import LinkedInScraper
 
 
+# --------------------------------------------------
+# Supabase configuration
+# --------------------------------------------------
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+TABLE = "scraper_progress_repo2"
+
+HEADERS = {
+    "apikey": SUPABASE_KEY,
+    "Authorization": f"Bearer {SUPABASE_KEY}",
+    "Content-Type": "application/json",
+}
+
+
+# --------------------------------------------------
+# Ensure progress row exists
+# --------------------------------------------------
+
+def ensure_row_exists():
+
+    url = f"{SUPABASE_URL}/rest/v1/{TABLE}?id=eq.1"
+
+    r = requests.get(url, headers=HEADERS)
+
+    if r.status_code == 200 and len(r.json()) == 0:
+
+        print("⚠️ Progress row not found. Creating it...")
+
+        insert_url = f"{SUPABASE_URL}/rest/v1/{TABLE}"
+
+        data = {"id": 1, "last_index": 0}
+
+        headers = HEADERS.copy()
+        headers["Prefer"] = "return=minimal"
+
+        r = requests.post(insert_url, headers=headers, json=data)
+
+        if r.status_code not in [200, 201]:
+            print("❌ Failed to create progress row:", r.text)
+        else:
+            print("✅ Progress row created")
+
+
+# --------------------------------------------------
+# Get progress
+# --------------------------------------------------
+
+def get_progress():
+
+    ensure_row_exists()
+
+    url = f"{SUPABASE_URL}/rest/v1/{TABLE}?id=eq.1"
+
+    r = requests.get(url, headers=HEADERS)
+
+    if r.status_code == 200 and r.json():
+        return r.json()[0]["last_index"]
+
+    return 0
+
+
+# --------------------------------------------------
+# Update progress
+# --------------------------------------------------
+
+def update_progress(index):
+
+    url = f"{SUPABASE_URL}/rest/v1/{TABLE}?id=eq.1"
+
+    headers = HEADERS.copy()
+    headers["Prefer"] = "return=minimal"
+
+    data = {"last_index": index}
+
+    r = requests.patch(url, headers=headers, json=data)
+
+    if r.status_code in [200, 204]:
+        print(f"✅ Progress updated → {index}")
+    else:
+        print("⚠️ Failed to update progress:", r.text)
+
+
+# --------------------------------------------------
+# Main scraper
+# --------------------------------------------------
+
 def main():
 
     print("=" * 70)
-    print("🚀 LINKEDIN SCRAPER - REPO B")
+    print("🚀 LINKEDIN SCRAPER WITH AUTO RESUME - REPO 2")
     print("=" * 70)
 
-    keywords = [
-
+    all_keywords = [
         "GRC Analyst",
         "Healthcare Data Analyst",
         "Healthcare data analyst, Health care business analyst,HeHalthcare data engineer",
@@ -1571,29 +1823,54 @@ def main():
     ]
 
     location = os.getenv("LOCATION", "United States")
-    max_workers = 6
+    max_workers = int(os.getenv("MAX_WORKERS", "5"))
 
     scraper = LinkedInScraper(use_database=True)
 
+    start_index = get_progress()
+
+    print(f"\n▶ Resuming from keyword index: {start_index}")
+    print(f"📊 Total keywords: {len(all_keywords)}")
+
     start_time = time.time()
 
-    jobs = scraper.scrape_all_jobs_batch(
-        keywords=keywords,
-        location=location,
-        max_workers=max_workers,
-        save_to_db=True
-    )
+    total_jobs = 0
 
-    if jobs:
-        scraper.save_to_csv(jobs)
+    for i in range(start_index, len(all_keywords)):
+
+        keyword = all_keywords[i]
+
+        print("\n" + "-" * 60)
+        print(f"🔍 Scraping keyword {i+1}/{len(all_keywords)}: {keyword}")
+        print("-" * 60)
+
+        try:
+
+            jobs = scraper.scrape_all_jobs_batch(
+                keywords=[keyword],
+                location=location,
+                max_workers=max_workers,
+                save_to_db=True,
+            )
+
+            total_jobs += len(jobs)
+
+            update_progress(i + 1)
+
+        except Exception as e:
+
+            print(f"❌ Error scraping keyword {keyword}: {e}")
+
+    # Reset progress after finishing all keywords
+    update_progress(0)
 
     elapsed = time.time() - start_time
 
     print("\n" + "=" * 70)
-    print("✅ REPO B SCRAPE COMPLETE")
+    print("✅ SCRAPER RUN COMPLETE - REPO 2")
     print("=" * 70)
-    print(f"Jobs scraped: {len(jobs)}")
-    print(f"Runtime: {elapsed/60:.1f} minutes")
+    print(f"Jobs scraped: {total_jobs}")
+    print(f"Total runtime: {elapsed/60:.1f} minutes")
 
 
 if __name__ == "__main__":
