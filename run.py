@@ -1646,14 +1646,283 @@
 
 
 
+# #!/usr/bin/env python3
+# """LinkedIn scraper with resume support - Repository 2"""
+
+# import sys
+# import os
+# import time
+# import requests
+# from datetime import datetime
+# from dotenv import load_dotenv
+
+# load_dotenv()
+
+# sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# from src.linkedin_scraper import LinkedInScraper
+
+
+# # --------------------------------------------------
+# # Supabase configuration
+# # --------------------------------------------------
+
+# SUPABASE_URL = os.getenv("SUPABASE_URL")
+# SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+# TABLE = "scraper_progress_repo2"
+
+# HEADERS = {
+#     "apikey": SUPABASE_KEY,
+#     "Authorization": f"Bearer {SUPABASE_KEY}",
+#     "Content-Type": "application/json",
+# }
+
+
+# # --------------------------------------------------
+# # Ensure progress row exists
+# # --------------------------------------------------
+
+# def ensure_row_exists():
+
+#     url = f"{SUPABASE_URL}/rest/v1/{TABLE}?id=eq.1"
+
+#     r = requests.get(url, headers=HEADERS)
+
+#     if r.status_code == 200 and len(r.json()) == 0:
+
+#         print("⚠️ Progress row not found. Creating it...")
+
+#         insert_url = f"{SUPABASE_URL}/rest/v1/{TABLE}"
+
+#         data = {"id": 1, "last_index": 0}
+
+#         headers = HEADERS.copy()
+#         headers["Prefer"] = "return=minimal"
+
+#         r = requests.post(insert_url, headers=headers, json=data)
+
+#         if r.status_code not in [200, 201]:
+#             print("❌ Failed to create progress row:", r.text)
+#         else:
+#             print("✅ Progress row created")
+
+
+# # --------------------------------------------------
+# # Get progress
+# # --------------------------------------------------
+
+# def get_progress():
+
+#     ensure_row_exists()
+
+#     url = f"{SUPABASE_URL}/rest/v1/{TABLE}?id=eq.1"
+
+#     r = requests.get(url, headers=HEADERS)
+
+#     if r.status_code == 200 and r.json():
+#         return r.json()[0]["last_index"]
+
+#     return 0
+
+
+# # --------------------------------------------------
+# # Update progress
+# # --------------------------------------------------
+
+# def update_progress(index):
+
+#     url = f"{SUPABASE_URL}/rest/v1/{TABLE}?id=eq.1"
+
+#     headers = HEADERS.copy()
+#     headers["Prefer"] = "return=minimal"
+
+#     data = {"last_index": index}
+
+#     r = requests.patch(url, headers=headers, json=data)
+
+#     if r.status_code in [200, 204]:
+#         print(f"✅ Progress updated → {index}")
+#     else:
+#         print("⚠️ Failed to update progress:", r.text)
+
+
+# # --------------------------------------------------
+# # Main scraper
+# # --------------------------------------------------
+
+# def main():
+
+#     print("=" * 70)
+#     print("🚀 LINKEDIN SCRAPER WITH AUTO RESUME - REPO 2")
+#     print("=" * 70)
+
+#     all_keywords = [
+#         "GRC Analyst",
+#         "Healthcare Data Analyst",
+#         "Healthcare data analyst, Health care business analyst,HeHalthcare data engineer",
+#         "HR Recruiter",
+#         "ITSM/ITIL",
+#         "Java Developer",
+#         "Java Full Stack",
+#         "Manufacturing engineer (Mechanical)",
+#         "Manufacturing engineer (Mechanical) for Canada",
+#         "Marketing Automation Specialist",
+#         "Mechanical Engineer",
+#         "Medical Affairs",
+#         "Medical Coding",
+#         "MLOps Engineer",
+#         ".Net",
+#         ".Net for Ireland",
+#         "Netsuite",
+#         "Network Engineer",
+#         "Network Security Engineer",
+#         "Payroll Analyst",
+#         "Pharmacovigilance",
+#         "Photography",
+#         "Product Manager",
+#         "Project Coordinator for Canada",
+#         "Project Management for Ireland",
+#         "Project Management Internship",
+#         "Project Manager",
+#         "python developer",
+#         "QA Automation Engineer",
+#         "Quality Analyst",
+#         "Quality Analyst for UK",
+#         "Quality Assurance Engineer",
+#         "Quality Engineer",
+#         "Regulatory Affairs",
+#         "RTL Design Engineer",
+#         "Safety Analyst",
+#         "Sailpoint",
+#         "Sales executive for UK",
+#         "Salesforce Developer",
+#         "Salesforce Developer for UK",
+#         "SAP",
+#         "Sap basis and security",
+#         "SAP FICO",
+#         "SAP MM",
+#         "Scrum Master",
+#         "Security Engineer",
+#         "ServiceNow Developer",
+#         "Software Developer",
+#         "Software Engineer",
+#         "Software Engineer for Ireland",
+#         "Software/Hardware Asset Management Analyst",
+#         "Structural Engineer for Canada",
+#         "Supply Chain",
+#         "Supply Chain (citizen/h4ead)",
+#         "Supply Chain for Ireland",
+#         "Sustainability analyst for Ireland",
+#         "System Infrastructure Engineer",
+#         "Tax analyst",
+#         "Technical program Management (citizen/h4ead)",
+#         "Tosca Test Automation Engineer",
+#         "UX Designer",
+#         "Workday Analyst"
+#     ]
+
+#     location = os.getenv("LOCATION", "United States")
+#     max_workers = int(os.getenv("MAX_WORKERS", "5"))
+
+#     scraper = LinkedInScraper(use_database=True)
+
+#     start_index = get_progress()
+
+#     print(f"\n▶ Resuming from keyword index: {start_index}")
+#     print(f"📊 Total keywords: {len(all_keywords)}")
+
+#     start_time = time.time()
+
+#     total_jobs = 0
+
+#     for i in range(start_index, len(all_keywords)):
+
+#         keyword = all_keywords[i]
+
+#         print("\n" + "-" * 60)
+#         print(f"🔍 Scraping keyword {i+1}/{len(all_keywords)}: {keyword}")
+#         print("-" * 60)
+
+#         try:
+
+#             jobs = scraper.scrape_all_jobs_batch(
+#                 keywords=[keyword],
+#                 location=location,
+#                 max_workers=max_workers,
+#                 save_to_db=True,
+#             )
+
+#             total_jobs += len(jobs)
+
+#             update_progress(i + 1)
+
+#         except Exception as e:
+
+#             print(f"❌ Error scraping keyword {keyword}: {e}")
+
+#     # Reset progress after finishing all keywords
+#     update_progress(0)
+
+#     elapsed = time.time() - start_time
+
+#     print("\n" + "=" * 70)
+#     print("✅ SCRAPER RUN COMPLETE - REPO 2")
+#     print("=" * 70)
+#     print(f"Jobs scraped: {total_jobs}")
+#     print(f"Total runtime: {elapsed/60:.1f} minutes")
+
+
+# if __name__ == "__main__":
+#     main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #!/usr/bin/env python3
-"""LinkedIn scraper with resume support - Repository 2"""
+"""LinkedIn scraper with resume support - Repository 1"""
 
 import sys
 import os
 import time
 import requests
-from datetime import datetime
+import urllib.parse
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -1663,20 +1932,36 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from src.linkedin_scraper import LinkedInScraper
 
 
-# --------------------------------------------------
-# Supabase configuration
-# --------------------------------------------------
-
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-TABLE = "scraper_progress_repo2"
+TABLE = "scraper_progress_repo1"
 
 HEADERS = {
     "apikey": SUPABASE_KEY,
     "Authorization": f"Bearer {SUPABASE_KEY}",
-    "Content-Type": "application/json",
+    "Content-Type": "application/json"
 }
+
+
+# --------------------------------------------------
+# Extract external apply links
+# --------------------------------------------------
+
+def extract_external_link(link):
+
+    if not link:
+        return link
+
+    if "linkedin.com/jobs/redirect" in link:
+
+        parsed = urllib.parse.urlparse(link)
+        params = urllib.parse.parse_qs(parsed.query)
+
+        if "url" in params:
+            return urllib.parse.unquote(params["url"][0])
+
+    return link
 
 
 # --------------------------------------------------
@@ -1691,8 +1976,6 @@ def ensure_row_exists():
 
     if r.status_code == 200 and len(r.json()) == 0:
 
-        print("⚠️ Progress row not found. Creating it...")
-
         insert_url = f"{SUPABASE_URL}/rest/v1/{TABLE}"
 
         data = {"id": 1, "last_index": 0}
@@ -1700,12 +1983,7 @@ def ensure_row_exists():
         headers = HEADERS.copy()
         headers["Prefer"] = "return=minimal"
 
-        r = requests.post(insert_url, headers=headers, json=data)
-
-        if r.status_code not in [200, 201]:
-            print("❌ Failed to create progress row:", r.text)
-        else:
-            print("✅ Progress row created")
+        requests.post(insert_url, headers=headers, json=data)
 
 
 # --------------------------------------------------
@@ -1741,7 +2019,7 @@ def update_progress(index):
 
     r = requests.patch(url, headers=headers, json=data)
 
-    if r.status_code in [200, 204]:
+    if r.status_code in [200,204]:
         print(f"✅ Progress updated → {index}")
     else:
         print("⚠️ Failed to update progress:", r.text)
@@ -1754,76 +2032,33 @@ def update_progress(index):
 def main():
 
     print("=" * 70)
-    print("🚀 LINKEDIN SCRAPER WITH AUTO RESUME - REPO 2")
+    print("🚀 LINKEDIN SCRAPER WITH AUTO RESUME - REPO 1")
     print("=" * 70)
 
     all_keywords = [
-        "GRC Analyst",
-        "Healthcare Data Analyst",
-        "Healthcare data analyst, Health care business analyst,HeHalthcare data engineer",
-        "HR Recruiter",
-        "ITSM/ITIL",
-        "Java Developer",
-        "Java Full Stack",
-        "Manufacturing engineer (Mechanical)",
-        "Manufacturing engineer (Mechanical) for Canada",
-        "Marketing Automation Specialist",
-        "Mechanical Engineer",
-        "Medical Affairs",
-        "Medical Coding",
-        "MLOps Engineer",
-        ".Net",
-        ".Net for Ireland",
-        "Netsuite",
-        "Network Engineer",
-        "Network Security Engineer",
-        "Payroll Analyst",
-        "Pharmacovigilance",
-        "Photography",
-        "Product Manager",
-        "Project Coordinator for Canada",
-        "Project Management for Ireland",
-        "Project Management Internship",
-        "Project Manager",
-        "python developer",
-        "QA Automation Engineer",
-        "Quality Analyst",
-        "Quality Analyst for UK",
-        "Quality Assurance Engineer",
-        "Quality Engineer",
-        "Regulatory Affairs",
-        "RTL Design Engineer",
-        "Safety Analyst",
-        "Sailpoint",
-        "Sales executive for UK",
-        "Salesforce Developer",
-        "Salesforce Developer for UK",
-        "SAP",
-        "Sap basis and security",
-        "SAP FICO",
-        "SAP MM",
-        "Scrum Master",
-        "Security Engineer",
-        "ServiceNow Developer",
-        "Software Developer",
-        "Software Engineer",
-        "Software Engineer for Ireland",
-        "Software/Hardware Asset Management Analyst",
-        "Structural Engineer for Canada",
-        "Supply Chain",
-        "Supply Chain (citizen/h4ead)",
-        "Supply Chain for Ireland",
-        "Sustainability analyst for Ireland",
-        "System Infrastructure Engineer",
-        "Tax analyst",
-        "Technical program Management (citizen/h4ead)",
-        "Tosca Test Automation Engineer",
-        "UX Designer",
-        "Workday Analyst"
+        "Actimize Developer","Active Directory","Agronomy Operations","AI/ML Engineer",
+        "Anti Money Laundering (AML)","Atlassian Engineer / Jira","Big Data Engineer",
+        "Bioinformatics","Bioinformatics for UK","Biotechnology","Biotechnology Internship",
+        "Business Analyst","Business Analyst for Canada","Business Intelligence Engineer",
+        "Business Intelligence Engineer Internships","Chemical Engineer","CLINICAL DATA ANALYST",
+        "Clinical Research Coordinator","Cloud Engineer","Cloud Engineer for Ireland",
+        "Computer Science","Computer Science Internship","Construction Management",
+        "Credit controller for UK","CRM Sales","CRM Specialist","Cyber security",
+        "Cybersecurity for Ireland","Cybersecurity for UK","Data Analyst",
+        "Data Analyst for Canada","Data Analyst for UK","Data Analyst Internship for Ireland",
+        "Data Analyst Internships","Database Administration","Data Center Technician",
+        "Data Engineer","Data Engineer (citizen/h4ead)","Data Engineer for UK",
+        "Data Science for Germany","Data Scientist","Design Verification Engineer",
+        "DevOps","DevOps for India","DevOps for Ireland","DevOps for UK","DevOps Internships",
+        "Dynamics 365","Electrical Engineer","Electrical Project",
+        "Electronic Health Records (EHR)","Embedded Software Engineer",
+        "Environmental Health and Safety (EHS)","Epic Analyst","ERP","Financial analyst",
+        "Financial analyst for Ireland","Frontend Engineering","Full Stack",
+        "Game Developer","Game UI / Interactive UI Designer","Generative AI"
     ]
 
-    location = os.getenv("LOCATION", "United States")
-    max_workers = int(os.getenv("MAX_WORKERS", "5"))
+    location = os.getenv("LOCATION","United States")
+    max_workers = int(os.getenv("MAX_WORKERS","5"))
 
     scraper = LinkedInScraper(use_database=True)
 
@@ -1836,7 +2071,7 @@ def main():
 
     total_jobs = 0
 
-    for i in range(start_index, len(all_keywords)):
+    for i in range(start_index,len(all_keywords)):
 
         keyword = all_keywords[i]
 
@@ -1853,21 +2088,23 @@ def main():
                 save_to_db=True,
             )
 
+            for job in jobs:
+                if "url" in job:
+                    job["url"] = extract_external_link(job["url"])
+
             total_jobs += len(jobs)
 
-            update_progress(i + 1)
+            update_progress(i+1)
 
         except Exception as e:
-
             print(f"❌ Error scraping keyword {keyword}: {e}")
 
-    # Reset progress after finishing all keywords
     update_progress(0)
 
     elapsed = time.time() - start_time
 
     print("\n" + "=" * 70)
-    print("✅ SCRAPER RUN COMPLETE - REPO 2")
+    print("✅ SCRAPER RUN COMPLETE")
     print("=" * 70)
     print(f"Jobs scraped: {total_jobs}")
     print(f"Total runtime: {elapsed/60:.1f} minutes")
